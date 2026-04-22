@@ -1,0 +1,1311 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CSI: A Química da Investigação Policial</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Rajdhani:wght@300;400;600;700&family=Share+Tech+Mono&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<style>
+  :root {
+    --navy: #04091a;
+    --navy2: #070e24;
+    --navy3: #0b1535;
+    --blue: #0f2157;
+    --mid: #1a3a7a;
+    --cyan: #00d4ff;
+    --teal: #00ffcc;
+    --accent: #4db8ff;
+    --warn: #ff6b35;
+    --text: #c8deff;
+    --text2: #7ba7d4;
+    --white: #e8f4ff;
+    --grid: rgba(0,212,255,0.06);
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior: smooth; }
+
+  body {
+    background: var(--navy);
+    color: var(--text);
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 17px;
+    overflow-x: hidden;
+    min-height: 100vh;
+  }
+
+  /* ─── BACKGROUND GRID ─── */
+  body::before {
+    content: '';
+    position: fixed; inset: 0;
+    background-image:
+      linear-gradient(var(--grid) 1px, transparent 1px),
+      linear-gradient(90deg, var(--grid) 1px, transparent 1px);
+    background-size: 50px 50px;
+    pointer-events: none;
+    z-index: 0;
+  }
+  body::after {
+    content: '';
+    position: fixed; inset: 0;
+    background: radial-gradient(ellipse at 20% 50%, rgba(0,80,180,0.12) 0%, transparent 60%),
+                radial-gradient(ellipse at 80% 20%, rgba(0,212,255,0.07) 0%, transparent 50%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  /* ─── SCANLINES ─── */
+  .scanlines {
+    position: fixed; inset: 0;
+    background: repeating-linear-gradient(
+      0deg, transparent, transparent 2px,
+      rgba(0,0,0,0.03) 2px, rgba(0,0,0,0.03) 4px
+    );
+    pointer-events: none;
+    z-index: 999;
+  }
+
+  /* ─── HEADER ─── */
+  header {
+    position: relative; z-index: 10;
+    padding: 60px 40px 40px;
+    text-align: center;
+    border-bottom: 1px solid rgba(0,212,255,0.2);
+    background: linear-gradient(180deg, rgba(0,0,30,0.9) 0%, transparent 100%);
+  }
+
+  .header-badge {
+    display: inline-block;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--teal);
+    border: 1px solid var(--teal);
+    padding: 4px 16px;
+    letter-spacing: 4px;
+    margin-bottom: 20px;
+    animation: pulse-border 2s infinite;
+  }
+  @keyframes pulse-border {
+    0%,100%{ border-color: var(--teal); box-shadow: 0 0 0 rgba(0,255,204,0); }
+    50%{ border-color: var(--cyan); box-shadow: 0 0 12px rgba(0,255,204,0.3); }
+  }
+
+  h1.main-title {
+    font-family: 'Orbitron', monospace;
+    font-size: clamp(28px, 5vw, 62px);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--white);
+    text-shadow: 0 0 40px rgba(0,212,255,0.5), 0 0 80px rgba(0,212,255,0.2);
+    letter-spacing: 2px;
+    margin-bottom: 12px;
+  }
+  h1.main-title span { color: var(--cyan); }
+
+  .subtitle {
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 18px;
+    color: var(--text2);
+    font-weight: 300;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    margin-bottom: 30px;
+  }
+
+  .header-info {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 40px;
+    flex-wrap: wrap;
+    margin-top: 24px;
+  }
+  .info-box {
+    background: rgba(0,212,255,0.05);
+    border: 1px solid rgba(0,212,255,0.2);
+    padding: 12px 24px;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    color: var(--accent);
+    letter-spacing: 1px;
+  }
+  .info-box .label {
+    display: block;
+    color: var(--text2);
+    font-size: 10px;
+    letter-spacing: 3px;
+    margin-bottom: 4px;
+  }
+  .info-box.members { max-width: 500px; }
+
+  /* ─── EPISODE BANNER ─── */
+  .ep-banner {
+    position: relative; z-index: 5;
+    margin: 40px auto;
+    max-width: 1100px;
+    padding: 0 30px;
+  }
+  .ep-card {
+    background: linear-gradient(135deg, rgba(15,33,87,0.8) 0%, rgba(7,14,36,0.95) 100%);
+    border: 1px solid rgba(0,212,255,0.25);
+    padding: 36px 44px;
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 36px;
+    align-items: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .ep-card::before {
+    content: 'CSI';
+    position: absolute; right: -10px; top: -20px;
+    font-family: 'Orbitron', monospace;
+    font-size: 140px;
+    font-weight: 900;
+    color: rgba(0,212,255,0.04);
+    pointer-events: none;
+  }
+  .ep-badge-big {
+    width: 90px; height: 90px;
+    border-radius: 50%;
+    background: conic-gradient(var(--cyan) 0deg, var(--mid) 360deg);
+    display: flex; align-items: center; justify-content: center;
+    font-family: 'Orbitron', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--white);
+    text-align: center;
+    line-height: 1.2;
+    animation: spin-slow 20s linear infinite;
+    flex-shrink: 0;
+  }
+  @keyframes spin-slow { to { transform: rotate(360deg); } }
+  .ep-info h2 {
+    font-family: 'Orbitron', monospace;
+    font-size: 22px;
+    color: var(--cyan);
+    margin-bottom: 8px;
+  }
+  .ep-info .ep-subtitle {
+    font-size: 28px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 12px;
+  }
+  .ep-info p { color: var(--text2); font-size: 15px; line-height: 1.7; }
+  .ep-info .ep-tags {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-top: 14px;
+  }
+  .ep-tag {
+    background: rgba(0,212,255,0.1);
+    border: 1px solid rgba(0,212,255,0.3);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    padding: 3px 12px;
+    letter-spacing: 1px;
+  }
+
+  /* ─── TABS ─── */
+  .tabs-section {
+    position: relative; z-index: 5;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 30px 80px;
+  }
+
+  .tabs-label {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    letter-spacing: 4px;
+    margin-bottom: 16px;
+    padding-left: 4px;
+  }
+
+  .tab-nav {
+    display: flex;
+    gap: 0;
+    flex-wrap: wrap;
+    border-bottom: 2px solid rgba(0,212,255,0.2);
+    margin-bottom: 0;
+  }
+  .tab-btn {
+    background: transparent;
+    border: none;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+    padding: 14px 22px;
+    font-family: 'Rajdhani', sans-serif;
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text2);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    white-space: nowrap;
+  }
+  .tab-btn .tab-num {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(0,212,255,0.4);
+    transition: color 0.25s;
+  }
+  .tab-btn:hover {
+    color: var(--accent);
+    background: rgba(0,212,255,0.05);
+  }
+  .tab-btn.active {
+    color: var(--cyan);
+    border-bottom-color: var(--cyan);
+    background: rgba(0,212,255,0.07);
+  }
+  .tab-btn.active .tab-num { color: var(--teal); }
+
+  .tab-panel {
+    display: none;
+    background: linear-gradient(135deg, rgba(11,21,53,0.7) 0%, rgba(4,9,26,0.9) 100%);
+    border: 1px solid rgba(0,212,255,0.15);
+    border-top: none;
+    padding: 40px;
+    animation: fadeIn 0.4s ease;
+  }
+  .tab-panel.active { display: block; }
+  @keyframes fadeIn { from { opacity:0; transform: translateY(10px); } to { opacity:1; transform: none; } }
+
+  /* ─── PANEL LAYOUT ─── */
+  .panel-grid {
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 40px;
+    align-items: start;
+  }
+  .panel-grid.reverse { grid-template-columns: 340px 1fr; }
+  .panel-grid.reverse .panel-3d { order: -1; }
+
+  .panel-title {
+    font-family: 'Orbitron', monospace;
+    font-size: 24px;
+    font-weight: 700;
+    color: var(--white);
+    margin-bottom: 6px;
+    display: flex;
+    align-items: center;
+    gap: 14px;
+  }
+  .panel-title::before {
+    content: '';
+    width: 4px;
+    height: 30px;
+    background: var(--cyan);
+    box-shadow: 0 0 10px var(--cyan);
+    flex-shrink: 0;
+  }
+  .panel-subtitle {
+    font-size: 14px;
+    font-family: 'Share Tech Mono', monospace;
+    color: var(--teal);
+    letter-spacing: 2px;
+    margin-bottom: 20px;
+    margin-left: 18px;
+  }
+
+  .panel-text { color: var(--text); line-height: 1.8; font-size: 16px; margin-bottom: 20px; }
+  .panel-text strong { color: var(--cyan); }
+
+  /* ─── CHEMISTRY CARDS ─── */
+  .chem-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 14px;
+    margin-top: 20px;
+  }
+  .chem-card {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.18);
+    padding: 18px 20px;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+  }
+  .chem-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 3px; height: 100%;
+    background: var(--cyan);
+    opacity: 0;
+    transition: opacity 0.25s;
+  }
+  .chem-card:hover { background: rgba(0,212,255,0.08); border-color: rgba(0,212,255,0.4); }
+  .chem-card:hover::after { opacity: 1; }
+  .chem-card h4 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--teal);
+    margin-bottom: 8px;
+    letter-spacing: 1px;
+  }
+  .chem-card p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── REACTION BOX ─── */
+  .reaction-box {
+    background: rgba(0,0,0,0.4);
+    border: 1px solid rgba(0,212,255,0.2);
+    border-left: 3px solid var(--teal);
+    padding: 16px 20px;
+    margin: 16px 0;
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 14px;
+    color: var(--teal);
+    letter-spacing: 1px;
+  }
+  .reaction-box .eq-label {
+    font-size: 10px;
+    color: var(--text2);
+    margin-bottom: 6px;
+    display: block;
+    letter-spacing: 3px;
+  }
+
+  /* ─── STEPS ─── */
+  .steps-list {
+    list-style: none;
+    margin: 20px 0;
+  }
+  .steps-list li {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    margin-bottom: 16px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid rgba(0,212,255,0.08);
+  }
+  .steps-list li:last-child { border-bottom: none; margin-bottom: 0; }
+  .step-num {
+    width: 32px; height: 32px;
+    background: rgba(0,212,255,0.1);
+    border: 1px solid var(--cyan);
+    color: var(--cyan);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 12px;
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+  .steps-list li div { font-size: 15px; color: var(--text); line-height: 1.7; }
+  .steps-list li div strong { color: var(--cyan); display: block; margin-bottom: 3px; }
+
+  /* ─── 3D CANVAS ─── */
+  .panel-3d {
+    position: relative;
+    height: 320px;
+    background: rgba(0,0,0,0.5);
+    border: 1px solid rgba(0,212,255,0.2);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .panel-3d canvas { display: block; }
+  .model-label {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 10px;
+    color: rgba(0,212,255,0.6);
+    letter-spacing: 3px;
+    text-align: center;
+    white-space: nowrap;
+  }
+  .model-label::before {
+    content: '[ ';
+  }
+  .model-label::after {
+    content: ' ]';
+  }
+
+  /* ─── EVIDENCE HIGHLIGHT ─── */
+  .evidence-bar {
+    background: linear-gradient(90deg, rgba(255,107,53,0.12) 0%, transparent 100%);
+    border-left: 3px solid var(--warn);
+    padding: 14px 18px;
+    margin: 16px 0;
+    font-size: 15px;
+    color: #ffb89a;
+  }
+  .evidence-bar strong { color: var(--warn); }
+
+  /* ─── CONCLUSION VERDICT ─── */
+  .verdict-box {
+    background: linear-gradient(135deg, rgba(0,212,255,0.08), rgba(0,255,204,0.04));
+    border: 1px solid var(--teal);
+    padding: 28px 32px;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  .verdict-box::before {
+    content: '✓';
+    position: absolute;
+    font-size: 160px;
+    opacity: 0.04;
+    right: -20px;
+    top: -20px;
+    color: var(--teal);
+    font-family: Arial;
+  }
+  .verdict-box h3 {
+    font-family: 'Orbitron', monospace;
+    font-size: 20px;
+    color: var(--teal);
+    margin-bottom: 10px;
+  }
+  .verdict-box p { color: var(--text2); font-size: 15px; line-height: 1.8; }
+
+  /* ─── FULL WIDTH GRID (ep overview) ─── */
+  .overview-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 16px;
+    margin-top: 24px;
+  }
+  .ov-card {
+    background: rgba(0,212,255,0.04);
+    border: 1px solid rgba(0,212,255,0.15);
+    padding: 20px 22px;
+  }
+  .ov-card h4 {
+    font-family: 'Orbitron', monospace;
+    font-size: 12px;
+    color: var(--cyan);
+    margin-bottom: 10px;
+    letter-spacing: 2px;
+  }
+  .ov-card p { font-size: 14px; color: var(--text2); line-height: 1.7; }
+
+  /* ─── TIMELINE ─── */
+  .timeline {
+    position: relative;
+    padding-left: 28px;
+    margin: 20px 0;
+  }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    left: 7px; top: 0; bottom: 0;
+    width: 2px;
+    background: linear-gradient(180deg, var(--cyan), var(--teal), transparent);
+  }
+  .tl-item {
+    position: relative;
+    margin-bottom: 20px;
+    padding-left: 20px;
+  }
+  .tl-item::before {
+    content: '';
+    position: absolute;
+    left: -21px;
+    top: 6px;
+    width: 8px; height: 8px;
+    background: var(--cyan);
+    border-radius: 50%;
+    box-shadow: 0 0 8px var(--cyan);
+  }
+  .tl-item h5 {
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 13px;
+    color: var(--teal);
+    margin-bottom: 5px;
+  }
+  .tl-item p { font-size: 14px; color: var(--text2); line-height: 1.6; }
+
+  /* ─── FOOTER ─── */
+  footer {
+    position: relative; z-index: 5;
+    text-align: center;
+    padding: 32px 20px;
+    border-top: 1px solid rgba(0,212,255,0.12);
+    font-family: 'Share Tech Mono', monospace;
+    font-size: 11px;
+    color: rgba(100,150,200,0.5);
+    letter-spacing: 2px;
+  }
+  footer span { color: var(--teal); opacity: 0.7; }
+
+  @media (max-width: 800px) {
+    .panel-grid, .panel-grid.reverse { grid-template-columns: 1fr; }
+    .panel-3d { height: 250px; }
+    .chem-cards { grid-template-columns: 1fr; }
+    .overview-grid { grid-template-columns: 1fr; }
+    .tab-btn { padding: 10px 14px; font-size: 12px; }
+    .ep-card { grid-template-columns: 1fr; gap: 20px; }
+    .ep-badge-big { display: none; }
+    header { padding: 40px 20px 30px; }
+  }
+</style>
+</head>
+<body>
+<div class="scanlines"></div>
+
+<!-- ─── HEADER ─── -->
+<header>
+  <div class="header-badge">TRABALHO ESCOLAR · QUÍMICA FORENSE</div>
+  <h1 class="main-title">A <span>QUÍMICA</span> POR TRÁS DA<br>INVESTIGAÇÃO POLICIAL</h1>
+  <p class="subtitle">Ciência &amp; Criminalística · Análise Forense</p>
+  <div class="header-info">
+    <div class="info-box">
+      <span class="label">DATA DE APRESENTAÇÃO</span>
+      29 DE ABRIL DE 2026
+    </div>
+    <div class="info-box members">
+      <span class="label">INTEGRANTES DO GRUPO</span>
+      Vitor · Gabriel P. · Guilherme Ramos · Nicolas · Paulo Davi · Camila K.
+    </div>
+  </div>
+</header>
+
+<!-- ─── EPISODE BANNER ─── -->
+<div class="ep-banner">
+  <div class="ep-card">
+    <div class="ep-badge-big">CSI<br>S01<br>EP01</div>
+    <div class="ep-info">
+      <h2>CSI: Crime Scene Investigation</h2>
+      <div class="ep-subtitle">Temporada 1 · Episódio 1 — "Pilot" (2000)</div>
+      <p>O detetive Gil Grissom e sua equipe investigam dois casos simultâneos em Las Vegas: o assassinato de uma mulher em uma mansão e o desaparecimento de um policial. Com evidências microscópicas, análise de DNA, luminol e técnicas químicas avançadas, a equipe do CSI desvenda os crimes. Este episódio é um manifesto da química forense aplicada à justiça criminal.</p>
+      <div class="ep-tags">
+        <span class="ep-tag">ANÁLISE DE SANGUE</span>
+        <span class="ep-tag">DNA</span>
+        <span class="ep-tag">LUMINOL</span>
+        <span class="ep-tag">IMPRESSÕES DIGITAIS</span>
+        <span class="ep-tag">TOXICOLOGIA</span>
+        <span class="ep-tag">BALÍSTICA</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── TABS ─── -->
+<div class="tabs-section">
+  <div class="tabs-label">// FASES DA INVESTIGAÇÃO — SELECIONE UMA ABA</div>
+  <nav class="tab-nav">
+    <button class="tab-btn active" onclick="switchTab('ep')">
+      <span class="tab-num">00</span> EPISÓDIO
+    </button>
+    <button class="tab-btn" onclick="switchTab('cena')">
+      <span class="tab-num">01</span> CENA DO CRIME
+    </button>
+    <button class="tab-btn" onclick="switchTab('digital')">
+      <span class="tab-num">02</span> IMPRESSÕES DIGITAIS
+    </button>
+    <button class="tab-btn" onclick="switchTab('dna')">
+      <span class="tab-num">03</span> ANÁLISE DE DNA
+    </button>
+    <button class="tab-btn" onclick="switchTab('toxi')">
+      <span class="tab-num">04</span> TOXICOLOGIA
+    </button>
+    <button class="tab-btn" onclick="switchTab('balistica')">
+      <span class="tab-num">05</span> BALÍSTICA
+    </button>
+    <button class="tab-btn" onclick="switchTab('conclusao')">
+      <span class="tab-num">06</span> CONCLUSÃO
+    </button>
+  </nav>
+
+  <!-- ── TAB 0: EPISÓDIO ── -->
+  <div class="tab-panel active" id="tab-ep">
+    <div class="panel-title">Visão Geral do Episódio</div>
+    <div class="panel-subtitle">CSI · S01E01 · "PILOT" (ESTREIA: 06/10/2000)</div>
+    <p class="panel-text">
+      No episódio piloto de <strong>CSI: Crime Scene Investigation</strong>, o detetive Gil Grissom lidera sua equipe em dois casos entrelaçados em Las Vegas. Uma mulher de 26 anos, Royce Harmon, é encontrada morta em uma mansão de luxo — e um oficial de polícia também desaparece misteriosamente. A série estabelece desde o início sua premissa central: <strong>a química e a ciência forense como ferramentas definitivas da verdade</strong>.
+    </p>
+    <div class="overview-grid">
+      <div class="ov-card">
+        <h4>CASO PRINCIPAL</h4>
+        <p>Mulher encontrada morta em quarto de hotel. Morte suspeita: possível overdose ou homicídio? A análise toxicológica e as manchas de sangue serão determinantes para o desfecho.</p>
+      </div>
+      <div class="ov-card">
+        <h4>CASO PARALELO</h4>
+        <p>Policial desaparecido. Fragmento de projétil encontrado na cena é submetido à análise balística. Pólvora residual coletada das mãos conecta suspeitos ao disparo.</p>
+      </div>
+      <div class="ov-card">
+        <h4>RESOLUÇÃO QUÍMICA</h4>
+        <p>Evidências microscópicas, cromatografia, eletroforese de DNA e testes de luminol revelam o que olhos humanos jamais veriam. A química condena os culpados.</p>
+      </div>
+    </div>
+    <div class="panel-grid" style="margin-top:30px;">
+      <div>
+        <p class="panel-text" style="margin-top:0">A grandiosidade do episódio está na forma como a equipe transforma <strong>traços invisíveis</strong> — moléculas de sangue, fragmentos de DNA, resíduos químicos — em provas irrefutáveis. Cada fase da investigação corresponde a um ramo específico da química aplicada:</p>
+        <div class="timeline">
+          <div class="tl-item">
+            <h5>FASE 1 — CENA DO CRIME</h5>
+            <p>Mapeamento de manchas de sangue com luminol. Química da bioluminescência forense revela rastros invisíveis a olho nu.</p>
+          </div>
+          <div class="tl-item">
+            <h5>FASE 2 — IMPRESSÕES DIGITAIS</h5>
+            <p>Fumaça de cianocrilato e pó de alumínio revelam digitais em superfícies porosas e não porosas. Química orgânica e inorgânica em ação.</p>
+          </div>
+          <div class="tl-item">
+            <h5>FASE 3 — ANÁLISE DE DNA</h5>
+            <p>PCR amplifica fragmentos genéticos. Eletroforese em gel separa bandas de DNA. Perfil genético único identifica suspeitos.</p>
+          </div>
+          <div class="tl-item">
+            <h5>FASE 4 — TOXICOLOGIA</h5>
+            <p>Cromatografia gasosa e espectrometria de massa detectam substâncias no sangue e tecidos da vítima.</p>
+          </div>
+          <div class="tl-item">
+            <h5>FASE 5 — BALÍSTICA</h5>
+            <p>GSR (resíduo de disparo) analisado por microscopia eletrônica. Chumbo, bário e antimônio identificam atiradores.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-3d" id="canvas-ep">
+        <div class="model-label">MOLÉCULA DE LUMINOL — C₈H₇N₃O₂</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 1: CENA DO CRIME ── -->
+  <div class="tab-panel" id="tab-cena">
+    <div class="panel-grid">
+      <div>
+        <div class="panel-title">Cena do Crime</div>
+        <div class="panel-subtitle">FOTOLUMINESCÊNCIA FORENSE · ANÁLISE DE MANCHAS</div>
+        <p class="panel-text">
+          A primeira fase é o exame da cena do crime. No episódio piloto, Grissom apaga as luzes e aplica <strong>luminol</strong> (C₈H₇N₃O₂) nas superfícies do quarto. Uma reação química instantânea revela rastros de sangue invisíveis que o assassino tentou limpar.
+        </p>
+        <div class="evidence-bar">
+          <strong>EVIDÊNCIA DO EPISÓDIO:</strong> Manchas de sangue sob carpete limpo reveladas pelo luminol, indicando que a vítima foi morta em outro cômodo e movida posteriormente.
+        </div>
+        <div class="reaction-box">
+          <span class="eq-label">REAÇÃO QUÍMICA DO LUMINOL</span>
+          C₈H₇N₃O₂ + H₂O₂ → 3-APA* + N₂ + H₂O + hν (luz azul 425nm)
+        </div>
+        <p class="panel-text">
+          O luminol reage com íons <strong>Fe²⁺/Fe³⁺</strong> presentes na hemoglobina do sangue, que catalisa a oxidação pelo peróxido de hidrogênio. O produto excitado (3-aminoftalato) libera fótons de luz azul — visível mesmo após limpeza com água sanitária.
+        </p>
+        <div class="chem-cards">
+          <div class="chem-card">
+            <h4>LUMINOL</h4>
+            <p>Reagente fotoluminescente que detecta até 1 parte de sangue em 10 milhões de partes de água. Sensibilidade extraordinária.</p>
+          </div>
+          <div class="chem-card">
+            <h4>LUZ UV / FORENSE</h4>
+            <p>Luz ultravioleta (310–400nm) excita fluidos biológicos como saliva e suor, que emitem fluorescência visível na escuridão.</p>
+          </div>
+          <div class="chem-card">
+            <h4>PADRÃO DE GOTAS</h4>
+            <p>O ângulo de impacto das gotas de sangue revela a posição da vítima. Gotas esféricas = queda vertical; elípticas = movimento lateral.</p>
+          </div>
+          <div class="chem-card">
+            <h4>HEMOGLOBINA</h4>
+            <p>Proteína com grupo heme (ferro) que catalisa a reação do luminol. A estrutura Fe-porfirina é a chave química da detecção forense.</p>
+          </div>
+        </div>
+      </div>
+      <div class="panel-3d" id="canvas-cena">
+        <div class="model-label">ATIVAÇÃO DO LUMINOL</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 2: IMPRESSÕES DIGITAIS ── -->
+  <div class="tab-panel" id="tab-digital">
+    <div class="panel-grid reverse">
+      <div class="panel-3d" id="canvas-digital">
+        <div class="model-label">ESTRUTURA DE CIANOACRILATO</div>
+      </div>
+      <div>
+        <div class="panel-title">Impressões Digitais</div>
+        <div class="panel-subtitle">QUÍMICA ORGÂNICA APLICADA · DACTILOSCOPIA FORENSE</div>
+        <p class="panel-text">
+          As impressões digitais são compostas por <strong>suor, aminoácidos, lipídios e sais</strong>. No episódio, a equipe utiliza diferentes técnicas químicas conforme o tipo de superfície onde a impressão foi deixada.
+        </p>
+        <ul class="steps-list">
+          <li>
+            <span class="step-num">01</span>
+            <div><strong>FUMAÇA DE CIANOACRILATO (Super Bonder)</strong>
+            O adesivo aquecido (CH₂=C(CN)–COOCH₃) polimeriza nos aminoácidos do suor. Forma um polímero branco visível sobre a impressão, ideal para superfícies não porosas como vidro e metal.</div>
+          </li>
+          <li>
+            <span class="step-num">02</span>
+            <div><strong>PÓ DE ALUMÍNIO / CARBONO</strong>
+            Partículas metálicas aderem mecanicamente à gordura das cristas papilares. Pó escuro para superfícies claras e vice-versa. Técnica mais rápida e eficaz em campo.</div>
+          </li>
+          <li>
+            <span class="step-num">03</span>
+            <div><strong>NINHIDRINA</strong>
+            Reage com aminoácidos presentes no suor (especialmente prolina) formando o composto púrpura "Roxo de Ruhemann". Excelente para superfícies porosas como papel.</div>
+          </li>
+          <li>
+            <span class="step-num">04</span>
+            <div><strong>LASER / LUZ FORENSE</strong>
+            Algumas substâncias das impressões fluorescam sob luz laser de 532nm. Detecção não destrutiva, preservando a evidência para análises posteriores de DNA.</div>
+          </li>
+        </ul>
+        <div class="reaction-box">
+          <span class="eq-label">REAÇÃO DA NINHIDRINA COM AMINOÁCIDOS</span>
+          Ninhidrina + R–CH(NH₂)–COOH → Roxo de Ruhemann + CO₂ + RCHO + H₂O
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 3: DNA ── -->
+  <div class="tab-panel" id="tab-dna">
+    <div class="panel-grid">
+      <div>
+        <div class="panel-title">Análise de DNA</div>
+        <div class="panel-subtitle">PCR · ELETROFORESE · STR PROFILING</div>
+        <p class="panel-text">
+          Uma única célula é suficiente. No episódio piloto, a equipe coleta cabelo com folículo, swab de saliva e fragmentos de pele sob as unhas da vítima. O <strong>DNA extraído</strong> passa por amplificação via PCR e separação eletroforética, gerando um perfil genético único — semelhante a uma "impressão digital molecular".
+        </p>
+        <div class="chem-cards">
+          <div class="chem-card">
+            <h4>EXTRAÇÃO DE DNA</h4>
+            <p>Células são lisadas com detergente (SDS). Proteínas removidas por proteinase K e solventes orgânicos. DNA precipitado por etanol gelado.</p>
+          </div>
+          <div class="chem-card">
+            <h4>PCR (REAÇÃO EM CADEIA)</h4>
+            <p>Ciclos de desnaturação (94°C), anelamento de primers (55°C) e extensão (72°C). Duplica o DNA a cada ciclo — 30 ciclos = 10⁹ cópias.</p>
+          </div>
+          <div class="chem-card">
+            <h4>ELETROFORESE EM GEL</h4>
+            <p>Campo elétrico separa fragmentos de DNA por tamanho. Menor fragmento migra mais rápido no gel de agarose. Padrão de bandas = perfil genético.</p>
+          </div>
+          <div class="chem-card">
+            <h4>STR (REPETIÇÕES CURTAS)</h4>
+            <p>13 regiões do genoma com sequências repetidas. A combinação dessas regiões identifica unicamente cada indivíduo com probabilidade de erro de 1 em 10¹³.</p>
+          </div>
+        </div>
+        <div class="reaction-box">
+          <span class="eq-label">SÍNTESE DE DNA NA PCR (CADA CICLO)</span>
+          DNA dupla fita → [94°C] → fita simples → [55°C] primers aneiam → [72°C] Taq polimerase estende → 2× DNA
+        </div>
+        <div class="evidence-bar">
+          <strong>EVIDÊNCIA DO EPISÓDIO:</strong> DNA sob as unhas da vítima corresponde ao perfil genético do suspeito encontrado na base de dados CODIS — vinculação irrefutável ao crime.
+        </div>
+      </div>
+      <div class="panel-3d" id="canvas-dna">
+        <div class="model-label">HÉLICE DUPLA DE DNA</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 4: TOXICOLOGIA ── -->
+  <div class="tab-panel" id="tab-toxi">
+    <div class="panel-grid reverse">
+      <div class="panel-3d" id="canvas-toxi">
+        <div class="model-label">CROMATOGRAMA — ESPECTRO DE MASSA</div>
+      </div>
+      <div>
+        <div class="panel-title">Toxicologia</div>
+        <div class="panel-subtitle">GC-MS · CROMATOGRAFIA · ANÁLISE SANGUÍNEA</div>
+        <p class="panel-text">
+          O laboratório de toxicologia analisa o sangue, urina e tecidos da vítima em busca de substâncias químicas. No piloto do CSI, o exame toxicológico é crucial para determinar se a morte foi por envenenamento ou overdose — e qual substância foi utilizada.
+        </p>
+        <ul class="steps-list">
+          <li>
+            <span class="step-num">01</span>
+            <div><strong>COLETA E PREPARO DA AMOSTRA</strong>
+            Sangue coletado em tubos com anticoagulante (EDTA). Amostras de fígado e vitreo (olho) preservam substâncias mesmo após decomposição.</div>
+          </li>
+          <li>
+            <span class="step-num">02</span>
+            <div><strong>CROMATOGRAFIA GASOSA (GC)</strong>
+            Amostra vaporizada é carreada por gás inerte por uma coluna capilar. Diferentes substâncias eluem em tempos distintos — o tempo de retenção identifica o composto.</div>
+          </li>
+          <li>
+            <span class="step-num">03</span>
+            <div><strong>ESPECTROMETRIA DE MASSA (MS)</strong>
+            Moléculas são fragmentadas por elétrons (70eV). Padrão de fragmentos = "impressão digital molecular". Identifica a substância com precisão de partes por bilhão (ppb).</div>
+          </li>
+          <li>
+            <span class="step-num">04</span>
+            <div><strong>IMUNOENSAIO (ELISA)</strong>
+            Anticorpos específicos detectam drogas e venenos em rastreamento inicial. Alta sensibilidade para triagem rápida antes da confirmação por GC-MS.</div>
+          </li>
+        </ul>
+        <div class="reaction-box">
+          <span class="eq-label">PRINCÍPIO DO GC-MS</span>
+          Amostra → Vaporização → Coluna cromatográfica → Detector de massa → Espectro m/z → Identificação
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 5: BALÍSTICA ── -->
+  <div class="tab-panel" id="tab-balistica">
+    <div class="panel-grid">
+      <div>
+        <div class="panel-title">Balística Forense</div>
+        <div class="panel-subtitle">GSR · MEV · ESPECTROMETRIA POR DISPERSÃO</div>
+        <p class="panel-text">
+          No caso do policial desaparecido, projéteis e resíduos de disparo (<strong>GSR — Gunshot Residue</strong>) são coletados das mãos dos suspeitos. A composição química da pólvora residual revela quem atirou.
+        </p>
+        <p class="panel-text">
+          Quando um arma é disparada, a propelente (pólvora) se decompõe instantaneamente, gerando partículas de <strong>chumbo (Pb), bário (Ba) e antimônio (Sb)</strong> que se depositam nas mãos, rosto e roupas de quem dispara.
+        </p>
+        <div class="chem-cards">
+          <div class="chem-card">
+            <h4>COMPOSIÇÃO DO GSR</h4>
+            <p>Partículas esféricas de 0,5–10 μm contendo Pb, Ba, Sb. A morfologia esférica (solidificação de gotícula líquida) é exclusiva de disparos de arma de fogo.</p>
+          </div>
+          <div class="chem-card">
+            <h4>MEV-EDS</h4>
+            <p>Microscopia Eletrônica de Varredura com espectroscopia de dispersão de energia identifica elementos químicos nas partículas com precisão nanométrica.</p>
+          </div>
+          <div class="chem-card">
+            <h4>TRAJETÓRIA BALÍSTICA</h4>
+            <p>Ângulo de entrada do projétil no corpo, deformação do projétil e estrias de cano revelam tipo de arma, distância e posição relativa do atirador.</p>
+          </div>
+          <div class="chem-card">
+            <h4>DECOMPOSIÇÃO DA PÓLVORA</h4>
+            <p>2 Pb(N₃)₂ → 2 Pb + 3 N₂ — a detonação do azoteto de chumbo gera os gases e partículas residuais detectáveis pelos testes forenses.</p>
+          </div>
+        </div>
+        <div class="reaction-box">
+          <span class="eq-label">REAÇÃO DE IGNIÇÃO (PÓLVORA SEM FUMAÇA)</span>
+          NC + NG → CO₂ + H₂O + N₂ + resíduos (Pb, Ba, Sb) — combustão &lt; 1ms
+        </div>
+      </div>
+      <div class="panel-3d" id="canvas-balistica">
+        <div class="model-label">PARTÍCULA DE GSR — Pb·Ba·Sb</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── TAB 6: CONCLUSÃO ── -->
+  <div class="tab-panel" id="tab-conclusao">
+    <div class="panel-title">Conclusão</div>
+    <div class="panel-subtitle">SÍNTESE QUÍMICA · RESOLUÇÃO DO CASO · IMPACTO CIENTÍFICO</div>
+
+    <div class="verdict-box" style="margin-bottom:30px;">
+      <h3>CASO RESOLVIDO PELA CIÊNCIA</h3>
+      <p>No episódio piloto do CSI, a integração de técnicas químicas e bioquímicas — luminol, dactiloscopia química, PCR/DNA, GC-MS e análise de GSR — permitiu resolver dois casos aparentemente sem solução. A química não apenas identificou os culpados, mas reconstruiu os eventos com precisão milimétrica.</p>
+    </div>
+
+    <div class="panel-grid">
+      <div>
+        <p class="panel-text">
+          O episódio demonstra que a <strong>química forense</strong> não é ficção científica — é a aplicação direta de princípios estudados em sala de aula ao mundo real. Cada reação química apresentada tem fundamento científico rigoroso:
+        </p>
+        <ul class="steps-list">
+          <li>
+            <span class="step-num">✓</span>
+            <div><strong>LUMINOL E BIOLUMINESCÊNCIA</strong> O ferro da hemoglobina catalisa a oxidação do luminol, conectando química inorgânica e orgânica à cena do crime.</div>
+          </li>
+          <li>
+            <span class="step-num">✓</span>
+            <div><strong>POLÍMEROS E DIGITAIS</strong> A polimerização do cianoacrilato em aminoácidos do suor aplica conhecimentos de química orgânica para preservar e revelar evidências.</div>
+          </li>
+          <li>
+            <span class="step-num">✓</span>
+            <div><strong>BIOQUÍMICA DO DNA</strong> PCR, enzimas restritoras e eletroforese transformam bioquímica molecular em prova criminal aceita em tribunal.</div>
+          </li>
+          <li>
+            <span class="step-num">✓</span>
+            <div><strong>ESPECTROMETRIA E TOXICOLOGIA</strong> GC-MS detecta moléculas em concentrações de partes por bilhão — limiar impossível sem química analítica avançada.</div>
+          </li>
+          <li>
+            <span class="step-num">✓</span>
+            <div><strong>QUÍMICA INORGÂNICA E GSR</strong> Pb, Ba e Sb — elementos inorgânicos da tabela periódica — denunciam quem disparou uma arma com base em princípios elementares.</div>
+          </li>
+        </ul>
+      </div>
+      <div class="panel-3d" id="canvas-conclusao">
+        <div class="model-label">TABELA PERIÓDICA FORENSE</div>
+      </div>
+    </div>
+
+    <div class="overview-grid" style="margin-top:30px;">
+      <div class="ov-card">
+        <h4>IMPACTO SOCIAL</h4>
+        <p>CSI popularizou a química forense e aumentou o interesse por carreiras científicas. O "Efeito CSI" mudou inclusive o comportamento de jurados em julgamentos reais.</p>
+      </div>
+      <div class="ov-card">
+        <h4>PRECISÃO CIENTÍFICA</h4>
+        <p>Apesar do dramatismo televisivo, as técnicas mostradas têm embasamento real. Luminol, PCR e GC-MS são rotineiramente usados por peritos criminais no mundo inteiro.</p>
+      </div>
+      <div class="ov-card">
+        <h4>FUTURO DA ÁREA</h4>
+        <p>Novas técnicas como sequenciamento de próxima geração (NGS), nanotecnologia e IA estão revolucionando a química forense, tornando-a ainda mais precisa e rápida.</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ─── FOOTER ─── -->
+<footer>
+  <span>CSI: A QUÍMICA DA INVESTIGAÇÃO POLICIAL</span> · TRABALHO ESCOLAR · 29 DE ABRIL DE 2026<br><br>
+  VITOR · GABRIEL P. · GUILHERME RAMOS · NICOLAS · PAULO DAVI · CAMILA K.
+</footer>
+
+<script>
+// ─── TAB SWITCHER ───
+function switchTab(id) {
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('tab-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+  // Re-init 3D for that tab
+  initAllScenes();
+}
+
+// ─── THREE.JS SCENES ───
+const scenes = {};
+
+function makeScene(canvasId, buildFn) {
+  const container = document.getElementById(canvasId);
+  if (!container || scenes[canvasId]) return;
+  const w = container.clientWidth, h = container.clientHeight;
+  if (!w || !h) return;
+
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+  renderer.setSize(w, h);
+  renderer.setClearColor(0x000000, 0);
+  container.insertBefore(renderer.domElement, container.firstChild);
+
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, w / h, 0.1, 1000);
+  camera.position.z = 5;
+
+  buildFn(scene, renderer, camera);
+  scenes[canvasId] = true;
+}
+
+// SCENE 1 — Luminol molecule (tab ep & cena)
+function buildLuminolScene(canvasId, color1, color2) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    const group = new THREE.Group();
+
+    // Atoms
+    const atoms = [
+      { pos: [0,0,0], color: color1, r: 0.28 },
+      { pos: [1.2,0.5,0], color: 0x00aaff, r: 0.22 },
+      { pos: [-1.2,0.5,0], color: 0x00aaff, r: 0.22 },
+      { pos: [0,-1.2,0], color: 0xff4444, r: 0.26 },
+      { pos: [1.2,-0.8,0.3], color: color2, r: 0.2 },
+      { pos: [-1.2,-0.8,0.3], color: color2, r: 0.2 },
+      { pos: [0,1.5,0], color: 0x00ff99, r: 0.2 },
+      { pos: [2,0,0.5], color: 0xff4444, r: 0.18 },
+      { pos: [-2,0,0.5], color: 0xff4444, r: 0.18 },
+    ];
+    atoms.forEach(a => {
+      const geo = new THREE.SphereGeometry(a.r, 16, 16);
+      const mat = new THREE.MeshPhongMaterial({ color: a.color, shininess: 100, emissive: a.color, emissiveIntensity: 0.3 });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set(...a.pos);
+      group.add(m);
+    });
+
+    // Bonds
+    const bonds = [[0,1],[0,2],[0,3],[1,4],[2,5],[0,6],[1,7],[2,8]];
+    bonds.forEach(([a,b]) => {
+      const p1 = new THREE.Vector3(...atoms[a].pos);
+      const p2 = new THREE.Vector3(...atoms[b].pos);
+      const dir = p2.clone().sub(p1);
+      const len = dir.length();
+      const mid = p1.clone().add(p2).multiplyScalar(0.5);
+      const geo = new THREE.CylinderGeometry(0.05, 0.05, len, 8);
+      const mat = new THREE.MeshPhongMaterial({ color: 0x334466, shininess: 40 });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.copy(mid);
+      m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+      group.add(m);
+    });
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x334466, 0.8));
+    const dLight = new THREE.DirectionalLight(0x00d4ff, 1.2);
+    dLight.position.set(5, 5, 5);
+    scene.add(dLight);
+    const dLight2 = new THREE.PointLight(0x00ffcc, 0.8, 20);
+    dLight2.position.set(-3, 2, 2);
+    scene.add(dLight2);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      group.rotation.y = t * 0.5;
+      group.rotation.x = Math.sin(t * 0.3) * 0.3;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+// SCENE — DNA Double Helix
+function buildDNAScene(canvasId) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    camera.position.z = 7;
+    const group = new THREE.Group();
+    const N = 30;
+    const radius = 1.2, pitch = 0.4, twist = 0.22;
+
+    for (let i = 0; i < N; i++) {
+      const t = i / N;
+      const y = (i - N/2) * pitch;
+      const angle1 = i * twist * Math.PI * 2;
+      const angle2 = angle1 + Math.PI;
+      const color1 = new THREE.Color().setHSL(0.58 + t * 0.15, 1, 0.6);
+      const color2 = new THREE.Color().setHSL(0.42 + t * 0.1, 1, 0.5);
+
+      // Backbone spheres
+      [[angle1, color1], [angle2, color2]].forEach(([ang, col]) => {
+        const geo = new THREE.SphereGeometry(0.12, 12, 12);
+        const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.4, shininess: 80 });
+        const m = new THREE.Mesh(geo, mat);
+        m.position.set(Math.cos(ang)*radius, y, Math.sin(ang)*radius);
+        group.add(m);
+      });
+
+      // Base pair (rung)
+      if (i % 2 === 0) {
+        const p1 = new THREE.Vector3(Math.cos(angle1)*radius, y, Math.sin(angle1)*radius);
+        const p2 = new THREE.Vector3(Math.cos(angle2)*radius, y, Math.sin(angle2)*radius);
+        const dir = p2.clone().sub(p1);
+        const len = dir.length();
+        const mid = p1.clone().add(p2).multiplyScalar(0.5);
+        const cgeo = new THREE.CylinderGeometry(0.04, 0.04, len, 6);
+        const cmat = new THREE.MeshPhongMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.2 });
+        const cm = new THREE.Mesh(cgeo, cmat);
+        cm.position.copy(mid);
+        cm.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), dir.normalize());
+        group.add(cm);
+      }
+    }
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x223344, 0.6));
+    const dl = new THREE.DirectionalLight(0x00d4ff, 1.0);
+    dl.position.set(5,5,5); scene.add(dl);
+    const dl2 = new THREE.PointLight(0x00ffcc, 0.6, 20);
+    dl2.position.set(-3,0,3); scene.add(dl2);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.008;
+      group.rotation.y = t * 0.4;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+// SCENE — Fingerprint (torus mesh)
+function buildFingerprintScene(canvasId) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    camera.position.z = 6;
+    const group = new THREE.Group();
+
+    // Concentric tori simulating fingerprint ridges
+    for (let i = 1; i <= 6; i++) {
+      const r = i * 0.35;
+      const geo = new THREE.TorusGeometry(r, 0.05, 8, 80 + i * 10);
+      const hue = 0.55 + i * 0.02;
+      const col = new THREE.Color().setHSL(hue, 1, 0.55);
+      const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.4, shininess: 60 });
+      const m = new THREE.Mesh(geo, mat);
+      m.rotation.x = Math.PI / 2;
+      m.position.y = Math.sin(i * 0.6) * 0.15;
+      group.add(m);
+    }
+    // Center sphere
+    const cGeo = new THREE.SphereGeometry(0.15, 16, 16);
+    const cMat = new THREE.MeshPhongMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.6 });
+    group.add(new THREE.Mesh(cGeo, cMat));
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x112233, 0.8));
+    const dl = new THREE.DirectionalLight(0x00d4ff, 1.2);
+    dl.position.set(4,4,4); scene.add(dl);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      group.rotation.z = t * 0.3;
+      group.rotation.x = Math.sin(t * 0.4) * 0.4;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+// SCENE — Mass spectrum / Toxicology (bar chart 3D)
+function buildToxiScene(canvasId) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    camera.position.set(5, 4, 8);
+    camera.lookAt(0, 0, 0);
+    const group = new THREE.Group();
+    const bars = [0.3,0.8,0.5,1.0,0.6,0.4,0.9,0.35,0.7,0.55,0.45,0.85];
+    bars.forEach((h, i) => {
+      const geo = new THREE.BoxGeometry(0.3, h * 3.5, 0.3);
+      const hue = 0.5 + (i/bars.length) * 0.3;
+      const col = new THREE.Color().setHSL(hue, 1, 0.5);
+      const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.3, shininess: 80 });
+      const m = new THREE.Mesh(geo, mat);
+      m.position.set((i - bars.length/2) * 0.5, h * 3.5 / 2 - 1.5, 0);
+      group.add(m);
+    });
+    // Base plane
+    const bGeo = new THREE.PlaneGeometry(8, 0.05);
+    const bMat = new THREE.MeshPhongMaterial({ color: 0x001133, side: THREE.DoubleSide });
+    const base = new THREE.Mesh(bGeo, bMat);
+    base.rotation.x = -Math.PI/2;
+    base.position.y = -1.5;
+    group.add(base);
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x223355, 0.8));
+    const dl = new THREE.DirectionalLight(0x00d4ff, 1.0);
+    dl.position.set(5,8,5); scene.add(dl);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.008;
+      group.rotation.y = t * 0.25;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+// SCENE — Ballistics / sphere cluster
+function buildBalisticaScene(canvasId) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    camera.position.z = 6;
+    const group = new THREE.Group();
+
+    // GSR particle cluster
+    const colors = [0xccaa00, 0xee4444, 0x8888cc, 0x00ccaa];
+    for (let i = 0; i < 40; i++) {
+      const r = 0.07 + Math.random() * 0.15;
+      const geo = new THREE.SphereGeometry(r, 12, 12);
+      const col = colors[Math.floor(Math.random() * colors.length)];
+      const mat = new THREE.MeshPhongMaterial({ color: col, emissive: col, emissiveIntensity: 0.3, shininess: 100 });
+      const m = new THREE.Mesh(geo, mat);
+      const theta = Math.random() * Math.PI * 2;
+      const phi = Math.acos(2 * Math.random() - 1);
+      const rad = 0.3 + Math.random() * 1.8;
+      m.position.set(
+        rad * Math.sin(phi) * Math.cos(theta),
+        rad * Math.sin(phi) * Math.sin(theta),
+        rad * Math.cos(phi)
+      );
+      group.add(m);
+    }
+    // Core sphere (bullet)
+    const cGeo = new THREE.SphereGeometry(0.4, 20, 20);
+    const cMat = new THREE.MeshPhongMaterial({ color: 0xaaaacc, shininess: 140, envMapIntensity: 1 });
+    group.add(new THREE.Mesh(cGeo, cMat));
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x223344, 0.6));
+    const dl = new THREE.DirectionalLight(0xffd700, 1.2);
+    dl.position.set(3,5,4); scene.add(dl);
+    const dl2 = new THREE.PointLight(0x00d4ff, 0.6, 15);
+    dl2.position.set(-3,0,3); scene.add(dl2);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      group.rotation.y = t * 0.4;
+      group.rotation.x = Math.sin(t * 0.3) * 0.2;
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+// SCENE — Conclusion (icosahedron / periodic elements)
+function buildConclusaoScene(canvasId) {
+  makeScene(canvasId, (scene, renderer, camera) => {
+    camera.position.z = 6;
+    const group = new THREE.Group();
+
+    const geo = new THREE.IcosahedronGeometry(1.5, 1);
+    const mat = new THREE.MeshPhongMaterial({
+      color: 0x0033aa,
+      emissive: 0x001155,
+      shininess: 100,
+      wireframe: false,
+      transparent: true,
+      opacity: 0.5
+    });
+    group.add(new THREE.Mesh(geo, mat));
+
+    const wgeo = new THREE.IcosahedronGeometry(1.52, 1);
+    const wmat = new THREE.MeshBasicMaterial({ color: 0x00d4ff, wireframe: true, transparent: true, opacity: 0.6 });
+    group.add(new THREE.Mesh(wgeo, wmat));
+
+    // Orbiting spheres
+    const orbits = [1.8, 2.3, 2.8];
+    const orbitGroups = orbits.map(r => {
+      const og = new THREE.Group();
+      const sg = new THREE.SphereGeometry(0.15, 12, 12);
+      const sm = new THREE.MeshPhongMaterial({ color: 0x00ffcc, emissive: 0x00ffcc, emissiveIntensity: 0.6 });
+      const s = new THREE.Mesh(sg, sm);
+      s.position.x = r;
+      og.add(s);
+      group.add(og);
+      return { group: og, speed: 0.5 + Math.random() * 0.5, tilt: Math.random() * Math.PI };
+    });
+
+    scene.add(group);
+    scene.add(new THREE.AmbientLight(0x112244, 0.8));
+    const dl = new THREE.DirectionalLight(0x00d4ff, 1.0);
+    dl.position.set(4,4,4); scene.add(dl);
+    const pl = new THREE.PointLight(0x0066ff, 0.8, 10);
+    pl.position.set(-2,2,2); scene.add(pl);
+
+    let t = 0;
+    function animate() {
+      requestAnimationFrame(animate);
+      t += 0.01;
+      group.rotation.y = t * 0.3;
+      group.rotation.x = t * 0.15;
+      orbitGroups.forEach((o, i) => {
+        o.group.rotation.y = t * (o.speed + i * 0.1);
+        o.group.rotation.x = o.tilt;
+      });
+      renderer.render(scene, camera);
+    }
+    animate();
+  });
+}
+
+function initAllScenes() {
+  setTimeout(() => {
+    const active = document.querySelector('.tab-panel.active');
+    if (!active) return;
+    const id = active.id;
+
+    if (id === 'tab-ep') buildLuminolScene('canvas-ep', 0x00aaff, 0x00ff99);
+    if (id === 'tab-cena') buildLuminolScene('canvas-cena', 0x4488ff, 0x00ffcc);
+    if (id === 'tab-digital') buildFingerprintScene('canvas-digital');
+    if (id === 'tab-dna') buildDNAScene('canvas-dna');
+    if (id === 'tab-toxi') buildToxiScene('canvas-toxi');
+    if (id === 'tab-balistica') buildBalisticaScene('canvas-balistica');
+    if (id === 'tab-conclusao') buildConclusaoScene('canvas-conclusao');
+  }, 50);
+}
+
+// Init on load
+window.addEventListener('load', () => {
+  initAllScenes();
+});
+</script>
+</body>
+</html>
